@@ -1,0 +1,4 @@
+aiohttp
+aiohttp_swagger
+aiohttp_cors
+setproctitle
