@@ -27,7 +27,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
 
         # Defaults to local handlers doing nothing but writing logs
         if site_handler is None:
-            site_handler = self._site_handler
+            self.site_handler = self._site_handler
         if vehicle_handler is None:
             vehicle_handler = self._vehicle_handler
         if appointment_handler is None:
@@ -36,6 +36,10 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         assert callable(site_handler), "site_handler must be a callable handling payload and exc arguments"
         assert callable(vehicle_handler), "vehicle_handler must be a callable handling payload and exc arguments"
         assert callable(appointment_handler), "appointment_handler must be a callable handling payload and exc arguments"
+
+        self.site_handler = site_handler
+        self.vehicle_handler = vehicle_handler
+        self.appointment_handler = appointment_handler
 
         self.url = "https://rdv.snct.lu"
         self.timeout = 10
@@ -145,18 +149,18 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         payload, exc = await self._request(self.site_list_url)
 
         if exc is not None:
-            self._site_handler(None, exc)  # pylint: disable=not-callable
+            self.site_handler(None, exc)  # pylint: disable=not-callable
             return
 
         try:
             sites = {"snct/%s" % fixed(x["name"].lower()): x["id"] for x in payload}
         except Exception as exc:  # pylint: disable=broad-except
             self.logger.exception("Got exception while formatting site payload: %s: %s", exc.__class__.__name__, exc)
-            self._site_handler(None, exc)  # pylint: disable=not-callable
+            self.site_handler(None, exc)  # pylint: disable=not-callable
         else:
             self.site_list = sites
             self.logger.info("Following sites will be sent to handler: %s", sites)
-            self._site_handler(sites, exc)  # pylint: disable=not-callable
+            self.site_handler(sites, exc)  # pylint: disable=not-callable
 
     async def refresh_vehicles(self):
         """ Refresh vehicles list """
@@ -180,18 +184,18 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
 
         payload, exc = await self._request(self.vehicle_list_url)
         if exc is not None:
-            self._vehicle_handler(payload, exc)  # pylint: disable=not-callable
+            self.vehicle_handler(payload, exc)  # pylint: disable=not-callable
             return
 
         try:
             vehicles = {fixed(x["name"].lower()): x["id"] for x in payload}
         except Exception as exc:  # pylint: disable=broad-except
             self.logger.exception("Got exception while formatting vehicle payload: %s: %s", exc.__class__.__name__, exc)
-            self._vehicle_handler(None, exc)  # pylint: disable=not-callable
+            self.vehicle_handler(None, exc)  # pylint: disable=not-callable
         else:
             self.vehicle_list = vehicles
             self.logger.info("Following vehicles will be sent to handler: %s", vehicles)
-            self._vehicle_handler(vehicles, exc)  # pylint: disable=not-callable
+            self.vehicle_handler(vehicles, exc)  # pylint: disable=not-callable
 
     async def refresh_appointments(self):  # pylint: disable=too-many-locals
         """ Refresh appointments list """
@@ -237,7 +241,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
                 self.logger.exception("Got exception while formatting vehicle payload: %s: %s", exc.__class__.__name__, exc)
 
         self.logger.info("%d appointments will be sent to handler", count)
-        self._appointment_handler(self.defaultdict_to_dict(appointments), exc)  # pylint: disable=not-callable
+        self.appointment_handler(self.defaultdict_to_dict(appointments), exc)  # pylint: disable=not-callable
 
     async def refresh_appointments_every_minutes(self):
         """ Call refresh_appointments and sleep for 1 minute before doing it again """
