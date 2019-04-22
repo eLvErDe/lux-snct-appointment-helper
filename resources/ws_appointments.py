@@ -10,6 +10,8 @@ WebSocket API:
 
 import asyncio
 import logging
+import datetime
+import functools
 import json
 import aiohttp
 import dateutil.parser
@@ -141,6 +143,20 @@ class WsHandler:
 
         return self.request.app
 
+    @property
+    def disp(self):
+        """ Return AppointmentDispatcher instance from app """
+
+        return self.app["apptm_disp"]
+
+    @staticmethod
+    def json_serializer(payload):
+        """ A serializer handling datetime.datetime to iso8601 """
+
+        if isinstance(payload, datetime.datetime):
+            return payload.isoformat()
+        return payload
+
     def add_to_ws_stream_coro(self):
         """
         Add this handler coroutine to an aiohttp server service
@@ -170,13 +186,14 @@ class WsHandler:
     async def send_json(self, payload):
         """ Send a JSON to WebSocket client """
 
-        await self.ws.send_json(payload)
+        await self.ws.send_json(payload, dumps=functools.partial(json.dumps, default=self.json_serializer))
 
     async def close(self):
         """ Close WebSocket object """
 
         await self.ws.close()
         self.remove_from_ws_stream_coro()
+        self.disp.unregister_appointment_client(self)
         self.logger.info("Client disconnected")
 
     def validate_criterias(self, criterias):
@@ -186,9 +203,6 @@ class WsHandler:
 
         criterias = json.loads(criterias)
         assert isinstance(criterias, list), "criterias must be a list of dict"
-
-        # Dispatcher service having all appointments
-        disp = self.request.app["apptm_disp"]
 
         for criteria in criterias:
 
@@ -202,13 +216,13 @@ class WsHandler:
 
             assert user_type in ["PRIVATE", "PROFESSIONAL"], "user_type must be one of PRIVATE, PROFESSIONAL"
             assert control_type in ["REGULAR", "REJECTED"], "user_type must be one of REGULAR, REJECTED"
-            assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(
-                disp.appointments[user_type][control_type].keys()
+            assert vehicle_type in self.disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(
+                self.disp.appointments[user_type][control_type].keys()
             )
             assert organism in ["snct"], "user_type must be one of snct"
             organism_site = "%s/%s" % (organism, site)
-            assert organism_site in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
-                disp.appointments[user_type][control_type][vehicle_type].keys()
+            assert organism_site in self.disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
+                self.disp.appointments[user_type][control_type][vehicle_type].keys()
             )
             try:
                 start_dt = dateutil.parser.parse(start_dt)
@@ -222,6 +236,14 @@ class WsHandler:
                 raise AssertionError("end_date must be a date like 2019-02-01 or a datetime like 2019-01-01T09:30:00")
 
             return criterias
+
+    async def push_appointments(self, appointments):
+        """
+        Method called by AppointmentDispatcher when new appointments
+        match giver criterias
+        """
+
+        await self.send_json({"appointments": appointments})
 
     async def run_forever(self):  # pylint: disable=too-many-branches
         """
@@ -245,6 +267,7 @@ class WsHandler:
                             self.logger.warning("Got invalid WebSocket payload: %s: %s: %s", exc.__class__.__name__, exc, msg.data)
                         else:
                             self.logger.info("Got valid criterias: %s", criterias)
+                            self.disp.register_appointment_client(self, criterias)
                 elif msg.tp == aiohttp.WSMsgType.close:
                     break
                 elif msg.tp == aiohttp.WSMsgType.closing:
