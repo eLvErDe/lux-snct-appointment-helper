@@ -28,7 +28,11 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
     async def get(self, request):
         """
         ---
-        description: Return a list of available appointments timeslots
+        description: |
+                     ## THIS IS A WEBSOCKET ROUTE
+
+                     * body is the type of message you need to send as subscription criterias
+                     * 101 response is defining the type of messages you will receive
         produces:
         - application/json
         tags:
