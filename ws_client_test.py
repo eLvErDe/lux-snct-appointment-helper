@@ -32,7 +32,8 @@ async def connect_and_listen(name, criterias):
     websocket = await session.ws_connect(URL)
     LOGGER.info("Client %s connected with criterias: %s", name, criterias)
 
-    # websocket.send_str("test" + str(datetime.now()))
+    await websocket.send_json(criterias)
+
     while True:
         msg = await websocket.receive()
         LOGGER.info("Message received on client %s from server: %s", name, msg)
@@ -54,8 +55,8 @@ if __name__ == "__main__":
     CRITERIAS = [
         [
             {
-                "start_date": ONE_WEEK_LATER,
-                "end_date": TWO_WEEKS_LATER,
+                "start_dt": ONE_WEEK_LATER.isoformat(),
+                "end_dt": TWO_WEEKS_LATER.isoformat(),
                 "organism": "snct",
                 "site": "sandweiler",
                 "user_type": "PRIVATE",
@@ -63,8 +64,8 @@ if __name__ == "__main__":
                 "vehicle_type": "car",
             },
             {
-                "start_date": ONE_WEEK_LATER,
-                "end_date": TWO_WEEKS_LATER,
+                "start_dt": ONE_WEEK_LATER.isoformat(),
+                "end_dt": TWO_WEEKS_LATER.isoformat(),
                 "organism": "snct",
                 "site": "esch_sur_alzette",
                 "user_type": "PRIVATE",
@@ -74,8 +75,8 @@ if __name__ == "__main__":
         ],
         [
             {
-                "start_date": ONE_WEEK_LATER,
-                "end_date": TWO_WEEKS_LATER,
+                "start_dt": ONE_WEEK_LATER.isoformat(),
+                "end_dt": TWO_WEEKS_LATER.isoformat(),
                 "organism": "snct",
                 "site": "esch_sur_alzette",
                 "user_type": "PRIVATE",
@@ -85,8 +86,8 @@ if __name__ == "__main__":
         ],
         [
             {
-                "start_date": ONE_WEEK_LATER,
-                "end_date": TWO_WEEKS_LATER,
+                "start_dt": ONE_WEEK_LATER.isoformat(),
+                "end_dt": TWO_WEEKS_LATER.isoformat(),
                 "organism": "snct",
                 "site": "livange",
                 "user_type": "PROFESSIONAL",
@@ -98,8 +99,8 @@ if __name__ == "__main__":
 
     LOOP.run_until_complete(
         asyncio.gather(
-            asyncio.ensure_future(connect_and_listen("car-eshc/sandweiler", CRITERIAS[0])),
-            asyncio.ensure_future(connect_and_listen("car-etch", CRITERIAS[1])),
+            asyncio.ensure_future(connect_and_listen("car-esch/sandweiler", CRITERIAS[0])),
+            asyncio.ensure_future(connect_and_listen("car-esch", CRITERIAS[1])),
             asyncio.ensure_future(connect_and_listen("bus-livange", CRITERIAS[2])),
         )
     )

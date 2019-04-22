@@ -10,7 +10,9 @@ WebSocket API:
 
 import asyncio
 import logging
+import json
 import aiohttp
+import dateutil.parser
 
 
 class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
@@ -111,7 +113,7 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
         """
 
         self.logger.info("New client subscribed to appointments WS stream")
-        ws_handler = WsHandler(request, asyncio.Task.current_task())
+        ws_handler = WsHandler(self, request, asyncio.Task.current_task())
         await ws_handler.prepare()
         ws_obj = await ws_handler.run_forever()
         return ws_obj
@@ -122,8 +124,9 @@ class WsHandler:
     Handle a ws_obj
     """
 
-    def __init__(self, request, aiohttp_task):
+    def __init__(self, factory, request, aiohttp_task):
         self.logger = logging.getLogger(self.__class__.__name__)
+        self.factory = factory
         self.request = request
         self.aiohttp_task = aiohttp_task
         self.ws = aiohttp.web.WebSocketResponse()  # pylint: disable=invalid-name
@@ -172,20 +175,72 @@ class WsHandler:
         self.remove_from_ws_stream_coro()
         self.logger.info("Client disconnected")
 
-    async def run_forever(self):
+    def validate_criterias(self, criterias):
+        """
+        Validate appoitments criteria received on Websocket
+        """
+
+        criterias = json.loads(criterias)
+        assert isinstance(criterias, list), "criterias must be a list of dict"
+
+        # Dispatcher service having all appointments
+        disp = self.request.app["apptm_disp"]
+
+        for criteria in criterias:
+
+            user_type = criteria.get("user_type", None)
+            control_type = criteria.get("control_type", None)
+            vehicle_type = criteria.get("vehicle_type", None)
+            organism = criteria.get("organism", None)
+            site = criteria.get("site", None)
+            start_dt = criteria.get("start_dt", None)
+            end_dt = criteria.get("end_dt", None)
+
+            assert user_type in ["PRIVATE", "PROFESSIONAL"], "user_type must be one of PRIVATE, PROFESSIONAL"
+            assert control_type in ["REGULAR", "REJECTED"], "user_type must be one of REGULAR, REJECTED"
+            assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(
+                disp.appointments[user_type][control_type].keys()
+            )
+            assert organism in ["snct"], "user_type must be one of snct"
+            organism_site = "%s/%s" % (organism, site)
+            assert organism_site in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
+                disp.appointments[user_type][control_type][vehicle_type].keys()
+            )
+            try:
+                start_dt = dateutil.parser.parse(start_dt)
+                criteria["start_dt"] = start_dt
+            except:  # pylint: disable=broad-except
+                raise AssertionError("start_dt must be a date like 2019-01-01 or a datetime like 2019-01-01T08:15:00")
+            try:
+                end_dt = dateutil.parser.parse(end_dt)
+                criteria["end_dt"] = end_dt
+            except:  # pylint: disable=broad-except
+                raise AssertionError("end_date must be a date like 2019-02-01 or a datetime like 2019-01-01T09:30:00")
+
+            return criterias
+
+    async def run_forever(self):  # pylint: disable=too-many-branches
         """
         Run WebSocket until it's stopped either by server or by client
         Also send an error JSON if receiving something
         """
 
-        try:
+        try:  # pylint: disable=too-many-nested-blocks
             while not self.ws.closed:
                 msg = await self.ws.receive()
                 if msg.tp == aiohttp.WSMsgType.text:
                     if msg.data == "close":
                         break
                     else:
-                        await self.send_json({"message": "This WS route does not receive messages", "status": 400})
+                        try:
+                            criterias = self.validate_criterias(msg.data)
+                        except AssertionError as exc:
+                            await self.send_json({"message": str(exc), "status": 400})
+                        except Exception as exc:  # pylint: disable=broad-except
+                            await self.send_json({"message": "Got unhandled type of message", "status": 500})
+                            self.logger.warning("Got invalid WebSocket payload: %s: %s: %s", exc.__class__.__name__, exc, msg.data)
+                        else:
+                            self.logger.info("Got valid criterias: %s", criterias)
                 elif msg.tp == aiohttp.WSMsgType.close:
                     break
                 elif msg.tp == aiohttp.WSMsgType.closing:
