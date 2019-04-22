@@ -1,6 +1,9 @@
 """ aiohttp middlewares """
 
 
+# pylint: disable=line-too-long
+
+
 import logging
 import functools
 import aiohttp

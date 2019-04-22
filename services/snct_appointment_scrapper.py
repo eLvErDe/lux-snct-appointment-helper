@@ -76,7 +76,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         return self.url + "/rdvct/secure/admin/vehicle/type/list"
 
     @property
-    def vehicle_appointment_url_template(self):
+    def vehicle_appointment_url_template(self):  # pylint: disable=invalid-name
         """ Return API url template (to use with .format() providing list of free appoitments frames """
         return self.url + "/rdvct/appointment/betweenDates/{start_dt}/{end_dt}/{vehicle_type}/{site_id}/{request_type}/{control_type}"
 
@@ -124,7 +124,9 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
             # Some centers do not handle motocycle for example
             elif resp.status == 400:
                 payload = await resp.json()
-                assert payload["code"] == "1" and payload["type"] == "TECHNICAL", "API responded with 400 code but it is not the usual error: %s" % payload
+                assert payload["code"] == "1" and payload["type"] == "TECHNICAL", (
+                    "API responded with 400 code but it is not the usual error: %s" % payload
+                )
                 payload = {}
             else:
                 assert False, "API responded with unexpected %d code: %.80s" % (resp.status, await resp.text())
@@ -201,7 +203,9 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         """ Refresh appointments list """
 
         inputs = {}
-        appointments = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list))))
+        appointments = collections.defaultdict(
+            lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
+        )
         count = 0
 
         for request_type in ["PRIVATE", "PROFESSIONAL"]:
@@ -209,7 +213,12 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
                 for vehicule_type, vehicule_type_id in self.vehicle_list.items():
                     for site, site_id in self.site_list.items():
                         url = self.vehicle_appointment_url_template.format(
-                            start_dt=self.today_lux_date, end_dt=self.two_month_later_lux_date, vehicle_type=vehicule_type_id, site_id=site_id, request_type=request_type, control_type=control_type
+                            start_dt=self.today_lux_date,
+                            end_dt=self.two_month_later_lux_date,
+                            vehicle_type=vehicule_type_id,
+                            site_id=site_id,
+                            request_type=request_type,
+                            control_type=control_type,
                         )
                         inputs[(request_type, control_type, vehicule_type, site, url)] = None
 
@@ -243,7 +252,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         self.logger.info("%d appointments will be sent to handler", count)
         self.appointment_handler(self.defaultdict_to_dict(appointments), exc)  # pylint: disable=not-callable
 
-    async def refresh_appointments_every_minutes(self):
+    async def refresh_appointments_every_minutes(self):  # pylint: disable=invalid-name
         """ Call refresh_appointments and sleep for 1 minute before doing it again """
 
         while not self.closed:

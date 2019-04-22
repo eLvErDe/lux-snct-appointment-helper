@@ -114,10 +114,14 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
 
         assert user_type in ["PRIVATE", "PROFESSIONAL"], "user_type must be one of PRIVATE, PROFESSIONAL"
         assert control_type in ["REGULAR", "REJECTED"], "user_type must be one of REGULAR, REJECTED"
-        assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(disp.appointments[user_type][control_type].keys())
+        assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(
+            disp.appointments[user_type][control_type].keys()
+        )
         assert organism in ["snct"], "user_type must be one of snct"
         organism_site = "%s/%s" % (organism, site)
-        assert organism_site in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(disp.appointments[user_type][control_type][vehicle_type].keys())
+        assert organism_site in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
+            disp.appointments[user_type][control_type][vehicle_type].keys()
+        )
         try:
             start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
         except:  # pylint: disable=broad-except

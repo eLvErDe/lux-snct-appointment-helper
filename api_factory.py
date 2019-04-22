@@ -9,7 +9,6 @@ Define the REST API for JWT authentication
 import asyncio
 import logging
 import functools
-import os
 import inspect
 import aiohttp.web
 import aiohttp_swagger
@@ -41,7 +40,9 @@ class ApiFactory(object):
             self.app.router.add_route("GET", self.config.context_path, lambda x: aiohttp.web.HTTPFound(swagger_url))
         self.app.router.add_route("GET", self.config.context_path + "/", lambda x: aiohttp.web.HTTPFound(swagger_url))
         self.app.router.add_route(
-            "GET", self.prefix_context_path("/appointments/{user_type}/{control_type}/{vehicle_type}/{organism}/{site}/{start_date}/{end_date}"), resources.RestAppointments().get
+            "GET",
+            self.prefix_context_path("/appointments/{user_type}/{control_type}/{vehicle_type}/{organism}/{site}/{start_date}/{end_date}"),
+            resources.RestAppointments().get,
         )
 
         # Setup Swagger
@@ -64,7 +65,10 @@ class ApiFactory(object):
 
         # Setup CORS
         if self.config.allow_origin:
-            self.cors = aiohttp_cors.setup(self.app, defaults={self.config.allow_origin: aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*")})
+            self.cors = aiohttp_cors.setup(
+                self.app,
+                defaults={self.config.allow_origin: aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*")},
+            )
             for route in self.app.router.routes():
                 if not isinstance(route.resource, aiohttp.web_urldispatcher.StaticResource):
                     self.cors.add(route)
@@ -118,14 +122,16 @@ class ApiFactory(object):
         """ Initialize SNCT website scrapper and do mandatory pre-start calls """
 
         app["snct_scrapper"] = services.SnctAppointmentScrapper(
-            site_handler=app["apptm_disp"].site_handler, vehicle_handler=app["apptm_disp"].vehicle_handler, appointment_handler=app["apptm_disp"].appointment_handler
+            site_handler=app["apptm_disp"].site_handler,
+            vehicle_handler=app["apptm_disp"].vehicle_handler,
+            appointment_handler=app["apptm_disp"].appointment_handler,
         )
 
         await app["snct_scrapper"].refresh_sites()
         await app["snct_scrapper"].refresh_vehicles()
         await app["snct_scrapper"].refresh_appointments()
 
-        async def start_periodically_refresh_appointments():
+        async def start_periodically_refresh_appointments():  # pylint: disable=invalid-name
             """ Refresh appointments every minutes """
             await asyncio.sleep(60)
             await app["snct_scrapper"].refresh_appointments_every_minutes()
