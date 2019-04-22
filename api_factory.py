@@ -81,6 +81,8 @@ class ApiFactory(object):
         self.app.on_startup.append(self.setup_appointment_dispatcher)
         self.app.on_startup.append(self.setup_snct_appointment_scrapper)
         self.app.on_shutdown.append(self.close_snct_appointment_scrapper)
+        self.app.on_startup.append(self.setup_ws_stream_coros)
+        self.app.on_shutdown.append(self.close_ws_stream_coros)
 
     def url_for(self, name):
         """ Get relative URL for a given route named """
@@ -119,7 +121,8 @@ class ApiFactory(object):
 
         app["apptm_disp"] = services.AppointmentDispatcher()
 
-    async def setup_snct_appointment_scrapper(self, app):
+    @staticmethod
+    async def setup_snct_appointment_scrapper(app):
         """ Initialize SNCT website scrapper and do mandatory pre-start calls """
 
         app["snct_scrapper"] = services.SnctAppointmentScrapper(
@@ -137,10 +140,28 @@ class ApiFactory(object):
             await asyncio.sleep(60)
             await app["snct_scrapper"].refresh_appointments_every_minutes()
 
-        asyncio.ensure_future(start_periodically_refresh_appointments())
+        app.refresh_appointments_task = asyncio.ensure_future(start_periodically_refresh_appointments())
 
     @staticmethod
     async def close_snct_appointment_scrapper(app):
         """ Shutdown SNCT website scrapper """
 
-        await app["snct_scrapper"].close()
+        await asyncio.shield(app["snct_scrapper"].close())
+        app.refresh_appointments_task.cancel()
+
+    @staticmethod
+    async def setup_ws_stream_coros(app):
+        """
+        Store all connected WS client here
+        This is intended to properly close them on shutdown
+        """
+
+        app["ws_stream_coro"] = set()
+
+    async def close_ws_stream_coros(self, app):
+        """
+        Close all WS clients
+        """
+        for coro in app["ws_stream_coro"]:
+            self.logger.info("Closing WsAppointments websocket client")
+            coro.cancel()

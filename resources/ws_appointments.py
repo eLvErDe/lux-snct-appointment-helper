@@ -201,4 +201,7 @@ class WsHandler:
         finally:
             # In case of CancelledError, client does not close properly but crash
             # This is why we have to use asycio.shield
-            await asyncio.shield(self.close())
+            try:
+                await asyncio.shield(self.close())
+            except asyncio.CancelledError:
+                pass
