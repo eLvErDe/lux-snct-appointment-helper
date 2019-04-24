@@ -270,7 +270,8 @@ class WsHandler:
                             self.disp.register_appointment_client(self, criterias)
                 elif msg.tp == aiohttp.WSMsgType.close:
                     break
-                elif msg.tp == aiohttp.WSMsgType.closing:
+                # aiohttp.WSMsgType.closing existence seems to depends on aiohttp version
+                elif hasattr(aiohttp.WSMsgType, "closing") and msg.tp == aiohttp.WSMsgType.closing:  # pylint: disable=no-member
                     break
                 else:
                     self.logger.warning("Client sent an unknown message: %s", msg)

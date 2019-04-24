@@ -36,7 +36,7 @@ def set_process_name(config_obj=None):
             if isinstance(val, str) and key.lower().endswith(("pass", "password", "passwd", "key")):
                 cli_args = cli_args.replace(val, "<hidden>")
 
-    setproctitle.setproctitle("%s-%s %s" % (artifact_id, version, cli_args))  # pylint: disable=maybe-no-member,c-extension-no-member
+    setproctitle.setproctitle("%s-%s %s" % (artifact_id, version, cli_args))  # pylint: disable=maybe-no-member,bad-option-value,c-extension-no-member
 
 
 def configure_root_logger(level=logging.INFO):
