@@ -26,7 +26,7 @@ class RestSites:  # pylint: disable=too-few-public-methods
         produces:
         - application/json
         tags:
-        - appointments
+        - definitions
         responses:
           200:
             description: List of organisms and site returned

@@ -45,6 +45,7 @@ class ApiFactory(object):
             resources.RestAppointments().get,
         )
         self.app.router.add_route("GET", self.prefix_context_path("/sites"), resources.RestSites().get)
+        self.app.router.add_route("GET", self.prefix_context_path("/vehicles"), resources.RestVehicles().get)
         self.app.router.add_route("GET", self.prefix_context_path("/appointments/ws"), resources.WsAppointments().get)
 
         # Setup Swagger
