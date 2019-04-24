@@ -125,8 +125,7 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
             disp.appointments[user_type][control_type].keys()
         )
         assert organism in ["snct"], "user_type must be one of snct"
-        organism_site = "%s/%s" % (organism, site)
-        assert organism_site in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
+        assert (organism, site) in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
             disp.appointments[user_type][control_type][vehicle_type].keys()
         )
         try:
@@ -138,7 +137,7 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
         except:  # pylint: disable=broad-except
             raise AssertionError("end_date must be a date like 2019-02-01")
 
-        appointments = disp.appointments[user_type][control_type][vehicle_type][organism_site]
+        appointments = disp.appointments[user_type][control_type][vehicle_type][(organism, site)]
 
         payload = [x.isoformat() for x in sorted(appointments) if x >= start_date and x < end_date]
         return aiohttp.web.json_response(payload, status=200)

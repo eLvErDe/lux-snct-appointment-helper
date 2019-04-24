@@ -166,7 +166,8 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
             return
 
         try:
-            sites = {"snct/%s" % fixed(x["name"].lower()): x["id"] for x in payload}
+            organism = "snct"
+            sites = {(organism, fixed(x["name"].lower())): x["id"] for x in payload}
         except Exception as exc:  # pylint: disable=broad-except
             self.logger.exception("Got exception while formatting site payload: %s: %s", exc.__class__.__name__, exc)
             self.site_handler(None, exc)  # pylint: disable=not-callable
