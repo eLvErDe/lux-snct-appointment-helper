@@ -66,6 +66,8 @@ def get_arguments_from_cmd_line():
     parser.add_argument("-d", "--debug", action="store_true", help="Put loggers in DEBUG level")
     parser.add_argument("-o", "--allow-origin", type=str, help="Allow to restrict the API access to the given URL or domain only")
 
+    parser.add_argument("-s", "--swagger-ui-schemes", type=str, nargs="+", default=("http", "https"), help="Override SwaggerUI list of schemes")
+
     parsed = parser.parse_args()
     if parsed.context_path != "/":
         parsed.context_path = "/" + parsed.context_path.strip("/") + "/"

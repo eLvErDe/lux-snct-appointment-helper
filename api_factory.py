@@ -48,12 +48,14 @@ class ApiFactory(object):
         self.app.router.add_route("GET", self.prefix_context_path("/appointments/ws"), resources.WsAppointments().get)
 
         # Setup Swagger
-        # bundle_params is a GitHub patch not released
+        # bundle_params and schemes are a GitHub patch not released
         # in any aiohttp_swagger package
         setup_swagger_sign = inspect.signature(aiohttp_swagger.setup_swagger)
         kwargs = {}
         if "bundle_params" in setup_swagger_sign.parameters:
             kwargs["bundle_params"] = {"layout": "BaseLayout", "defaultModelExpandDepth": 5}
+        if "schemes" in setup_swagger_sign.parameters:
+            kwargs["schemes"] = self.config.swagger_ui_schemes
 
         aiohttp_swagger.setup_swagger(
             app=self.app,
