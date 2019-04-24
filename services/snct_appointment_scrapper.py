@@ -120,7 +120,15 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         try:
             resp = await self.session.get(url, timeout=self.timeout)
             if resp.status == 200:
-                payload = await resp.json()
+                try:
+                    payload = await resp.json()
+                except RuntimeError as exc:
+                    # Looks like being a bug in asyncio
+                    # https://github.com/python/asyncio/issues/488
+                    if str(exc) == "Cannot pause_reading() when closing":
+                        raise asyncio.TimeoutError("Request timed out (Got %s: %s)" % (exc.__class__.__name__, exc)) from None
+                    else:
+                        raise exc from None
             # Some centers do not handle motocycle for example
             elif resp.status == 400:
                 payload = await resp.json()
@@ -128,6 +136,9 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
                 payload = {}
             else:
                 assert False, "API responded with unexpected %d code: %.80s" % (resp.status, await resp.text())
+        except (asyncio.TimeoutError, AssertionError) as exc:
+            self.logger.error("Got exception while calling: %s: %s: %s", url, exc.__class__.__name__, exc)
+            return None, exc
         except Exception as exc:  # pylint: disable=broad-except
             self.logger.exception("Got exception while calling: %s: %s: %s", url, exc.__class__.__name__, exc)
             return None, exc
@@ -219,13 +230,13 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         for inp, result in zip(inputs, results):
 
             if isinstance(result, Exception):
-                self.logger.error("Got exception when querying %s: %s: %s", url, inp.__class__.__name__, inp[4])
+                self.logger.error("Got exception when querying (1) %s: %s: %s", url, inp.__class__.__name__, inp[4])
                 continue
 
             payload, exc = result
 
             if exc is not None:
-                self.logger.error("Got exception when querying %s: %s: %s", url, inp.__class__.__name__, inp[4])
+                self.logger.error("Got exception when querying (2) %s: %s: %s", url, exc.__class__.__name__, exc)
                 continue
 
             self.logger.debug("Refreshing available appointments at %s worked !", inp[4])
