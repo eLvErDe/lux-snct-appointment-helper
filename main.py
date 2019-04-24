@@ -88,4 +88,6 @@ def create_api():
 if __name__ == "__main__":
 
     API = create_api()
-    aiohttp.web.run_app(API.app, host=API.config.bind_address, port=API.config.bind_port, access_log_format="%s %r [status:%s request:%Tfs bytes:%bb]")
+    aiohttp.web.run_app(
+        API.app, host=API.config.bind_address, port=API.config.bind_port, access_log_format="%s %r [status:%s request:%Tfs bytes:%bb]"
+    )

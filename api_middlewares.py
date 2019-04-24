@@ -1,6 +1,9 @@
 """ aiohttp middlewares """
 
 
+# pylint: disable=line-too-long
+
+
 import logging
 import functools
 import aiohttp
@@ -29,6 +32,10 @@ async def rest_error_middleware(_, handler, logger=None):
                 message = exc.reason  # pylint: disable=no-member
                 log_level = logging.WARNING
                 with_exception = False
+                # Better handling of people doing GET on a WS route
+                if status == 400 and hasattr(exc, "text") and exc.text.startswith("No WebSocket UPGRADE"):  # pylint: disable=no-member
+                    status = 403
+                    message = "This route is for WebSocket clients only"
             elif isinstance(exc, AssertionError):
                 status = 400
                 message = str(exc)

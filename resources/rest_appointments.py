@@ -34,38 +34,45 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
           type: string
           enum: ["PRIVATE", "PROFESSIONAL"]
           default: PRIVATE
+          required: true
         - in: path
           name: control_type
           description: Type of control (initial or re-test for a rejected vehicule)
           type: string
           enum: ["REGULAR", "REJECT"]
           default: REGULAR
+          required: true
         - in: path
           name: vehicle_type
           description: Type of vehicle
           type: string
           enum: ["motocycle", "car", "bus", "small_trailer", "large_trailer", "van", "truck", "tractor"]
           default: car
+          required: true
         - in: path
           name: organism
           description: SNCT or a private concurrent
           type: string
           enum: ["snct"]
           default: snct
+          required: true
         - in: path
           name: site
           description: Site name, like esch_sur_alzette for SNCT
           type: string
+          required: true
         - in: path
           name: start_date
           description: Seek for appointment after this date (included)
           type: string
           format: date
+          required: true
         - in: path
           name: end_date
           description: Seek for appointment before this date (excluded)
           type: string
           format: date
+          required: true
         responses:
           200:
             description: Available appointments slots returned
@@ -93,7 +100,7 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
                 message:
                   type: string
                   description: Validation error message
-                  example: "control_type must be one of: private, pro"
+                  example: "control_type must be one of: PRIVATE, PROFESSIONAL"
                 status:
                   type: number
                   description: HTTP error status code
@@ -114,10 +121,14 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
 
         assert user_type in ["PRIVATE", "PROFESSIONAL"], "user_type must be one of PRIVATE, PROFESSIONAL"
         assert control_type in ["REGULAR", "REJECTED"], "user_type must be one of REGULAR, REJECTED"
-        assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(disp.appointments[user_type][control_type].keys())
+        assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(
+            disp.appointments[user_type][control_type].keys()
+        )
         assert organism in ["snct"], "user_type must be one of snct"
         organism_site = "%s/%s" % (organism, site)
-        assert organism_site in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(disp.appointments[user_type][control_type][vehicle_type].keys())
+        assert organism_site in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
+            disp.appointments[user_type][control_type][vehicle_type].keys()
+        )
         try:
             start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
         except:  # pylint: disable=broad-except

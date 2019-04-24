@@ -1,4 +1,8 @@
 aiohttp
-aiohttp_swagger
+# Can work with regular aiohttp_swagger but "official" version
+# Does not work with aiohttp 3.5 and miss some nice features
+#aiohttp_swagger
+-e git+https://github.com/eLvErDe/aiohttp-swagger.git#egg=aiohttp_swagger
 aiohttp_cors
 setproctitle
+pytz
