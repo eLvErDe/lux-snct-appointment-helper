@@ -44,6 +44,7 @@ class ApiFactory(object):
             self.prefix_context_path("/appointments/{user_type}/{control_type}/{vehicle_type}/{organism}/{site}/{start_date}/{end_date}"),
             resources.RestAppointments().get,
         )
+        self.app.router.add_route("GET", self.prefix_context_path("/sites"), resources.RestSites().get)
         self.app.router.add_route("GET", self.prefix_context_path("/appointments/ws"), resources.WsAppointments().get)
 
         # Setup Swagger
