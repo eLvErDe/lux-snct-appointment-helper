@@ -68,9 +68,9 @@ class AppointmentDispatcher:
                         removed = [x for x in orig_appointments if x not in new_appointments]
 
                         if added:
-                            self.logger.info("Found new appointments for %s/%s %s/%s/%s: %s", site[0], site[1], request_type, control_type, vehicule_type, added)
+                            self.logger.info("Found new appointments for %s/%s %s/%s/%s: %s", site[0], site[1], request_type, control_type, vehicule_type, [x.isoformat() for x in added])
                         if removed:
-                            self.logger.info("Found removed appointments for %s/%s %s/%s/%s: %s", site[0], site[1], request_type, control_type, vehicule_type, removed)
+                            self.logger.info("Found removed appointments for %s/%s %s/%s/%s: %s", site[0], site[1], request_type, control_type, vehicule_type, [x.isoformat() for x in removed])
 
                         self.appointments[request_type][control_type][vehicule_type][site] = new_appointments
 
