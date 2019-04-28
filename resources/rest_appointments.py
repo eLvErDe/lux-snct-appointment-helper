@@ -134,6 +134,8 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
             raise AssertionError("end_date must be a date like 2019-02-01")
 
         appointments = disp.appointments[user_type][control_type][vehicle_type][(organism, site)]
+        if appointments is None:
+            appointments = []
 
-        payload = [x.isoformat() for x in sorted(appointments) if start_date >= x < end_date]
+        payload = [x.isoformat() for x in sorted(appointments) if x >= start_date and x < end_date]
         return aiohttp.web.json_response(payload, status=200)
