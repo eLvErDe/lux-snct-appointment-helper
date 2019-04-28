@@ -361,7 +361,7 @@ class WsHandler:
 
             # Refresh failed
             if appointments is None:
-                continue
+                appointments = []
 
             for appointment in appointments:
                 if appointment < start_dt or appointment > end_dt:

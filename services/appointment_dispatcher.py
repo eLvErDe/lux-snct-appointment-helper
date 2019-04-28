@@ -22,7 +22,7 @@ class AppointmentDispatcher:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sites = []
         self.vehicle_types = []
-        self.appointments = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: None))))
+        self.appointments = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict())))
 
         self.appointments_clients = {}
 
@@ -50,12 +50,13 @@ class AppointmentDispatcher:
                 for vehicule_type in payload[request_type][control_type]:
                     for site in payload[request_type][control_type][vehicule_type]:
 
-                        orig_appointments = self.appointments[request_type][control_type][vehicule_type][site]
+                        orig_appointments = self.appointments[request_type][control_type][vehicule_type].get(site, None)
                         new_appointments = payload[request_type][control_type][vehicule_type][site]
 
                         # First call for this site
                         if orig_appointments is None:
-                            orig_appointments = new_appointments
+                            self.appointments[request_type][control_type][vehicule_type][site] = new_appointments
+                            self.logger.info("Initial appointments update for %s/%s %s/%s/%s", site[0], site[1], request_type, control_type, vehicule_type)
                             continue
 
                         # None in payload instead of list, refresh failed
@@ -64,15 +65,16 @@ class AppointmentDispatcher:
                             continue
 
                         added = [x for x in new_appointments if x not in orig_appointments]
-                        removed = [x for x in new_appointments if x not in orig_appointments]
+                        removed = [x for x in orig_appointments if x not in new_appointments]
 
                         if added:
                             self.logger.info("Found new appointments for %s/%s %s/%s/%s: %s", site[0], site[1], request_type, control_type, vehicule_type, added)
                         if removed:
                             self.logger.info("Found removed appointments for %s/%s %s/%s/%s: %s", site[0], site[1], request_type, control_type, vehicule_type, removed)
 
-                        orig_appointments = new_appointments
+                        self.appointments[request_type][control_type][vehicule_type][site] = new_appointments
 
+        #self.appointments = payload
         # for client, criterias in self.appointments_clients.items():
         #    asyncio.ensure_future(client.push_appointments(self.appointments))
 
