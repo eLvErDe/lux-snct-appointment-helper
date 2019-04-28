@@ -303,7 +303,7 @@ class WsHandler:
         try:  # pylint: disable=too-many-nested-blocks
             while not self.ws.closed:
                 msg = await self.ws.receive()
-                if msg.tp == aiohttp.WSMsgType.text:
+                if msg.type == aiohttp.WSMsgType.text:
                     if msg.data == "close":
                         break
                     else:
@@ -317,10 +317,10 @@ class WsHandler:
                         else:
                             self.logger.info("Got valid criterias: %s", criterias)
                             self.disp.register_appointment_client(self, criterias)
-                elif msg.tp == aiohttp.WSMsgType.close:
+                elif msg.type == aiohttp.WSMsgType.close:
                     break
                 # aiohttp.WSMsgType.closing existence seems to depends on aiohttp version
-                elif hasattr(aiohttp.WSMsgType, "closing") and msg.tp == aiohttp.WSMsgType.closing:  # pylint: disable=no-member
+                elif hasattr(aiohttp.WSMsgType, "closing") and msg.type == aiohttp.WSMsgType.closing:  # pylint: disable=no-member
                     break
                 else:
                     self.logger.warning("Client sent an unknown message: %s", msg)
