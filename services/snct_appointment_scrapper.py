@@ -102,12 +102,6 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         """ Dummy handler for receiving appoitment updates """
         return functools.partial(self._dummy_handler, data_type="appointment")
 
-    def defaultdict_to_dict(self, payload):
-        """ Defaultdict to dict, useless except for logging purpose """
-        if isinstance(payload, collections.defaultdict):
-            payload = {k: self.defaultdict_to_dict(v) for k, v in payload.items()}
-        return payload
-
     async def _request(self, url):
         """
         Perform GET HTTP request on given URL
@@ -132,9 +126,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
             # Some centers do not handle motocycle for example
             elif resp.status == 400:
                 payload = await resp.json()
-                assert payload["code"] == "1" and payload["type"] == "TECHNICAL", (
-                    "API responded with 400 code but it is not the usual error: %s" % payload
-                )
+                assert payload["code"] == "1" and payload["type"] == "TECHNICAL", "API responded with 400 code but it is not the usual error: %s" % payload
                 payload = {}
             else:
                 assert False, "API responded with unexpected %d code: %.80s" % (resp.status, await resp.text())
@@ -215,9 +207,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
         """ Refresh appointments list """
 
         inputs = {}
-        appointments = collections.defaultdict(
-            lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list)))
-        )
+        appointments = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(list))))
         count = 0
 
         for request_type in ["PRIVATE", "PROFESSIONAL"]:
@@ -225,12 +215,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
                 for vehicule_type, vehicule_type_id in self.vehicle_list.items():
                     for site, site_id in self.site_list.items():
                         url = self.vehicle_appointment_url_template.format(
-                            start_dt=self.today_lux_date,
-                            end_dt=self.two_month_later_lux_date,
-                            vehicle_type=vehicule_type_id,
-                            site_id=site_id,
-                            request_type=request_type,
-                            control_type=control_type,
+                            start_dt=self.today_lux_date, end_dt=self.two_month_later_lux_date, vehicle_type=vehicule_type_id, site_id=site_id, request_type=request_type, control_type=control_type
                         )
                         inputs[(request_type, control_type, vehicule_type, site, url)] = None
 
@@ -241,12 +226,14 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
 
             if isinstance(result, Exception):
                 self.logger.error("Got exception when querying (1) %s: %s: %s", url, inp.__class__.__name__, inp[4])
+                appointments[inp[0]][inp[1]][inp[2]][inp[3]] = None
                 continue
 
             payload, exc = result
 
             if exc is not None:
                 self.logger.error("Got exception when querying (2) %s: %s: %s", url, exc.__class__.__name__, exc)
+                appointments[inp[0]][inp[1]][inp[2]][inp[3]] = None
                 continue
 
             self.logger.debug("Refreshing available appointments at %s worked !", inp[4])
@@ -262,7 +249,7 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
                 self.logger.exception("Got exception while formatting vehicle payload: %s: %s", exc.__class__.__name__, exc)
 
         self.logger.info("%d appointments will be sent to handler", count)
-        self.appointment_handler(self.defaultdict_to_dict(appointments), exc)  # pylint: disable=not-callable
+        self.appointment_handler(appointments)  # pylint: disable=not-callable
 
     async def refresh_appointments_every_minutes(self):  # pylint: disable=invalid-name
         """ Call refresh_appointments and sleep for 1 minute before doing it again """
