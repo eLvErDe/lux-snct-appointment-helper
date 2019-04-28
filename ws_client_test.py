@@ -18,7 +18,7 @@ import aiohttp
 
 
 HOST = os.getenv("HOST", "127.0.0.1")
-PORT = int(os.getenv("PORT", 5000))
+PORT = int(os.getenv("PORT", "5000"))
 
 URL = "http://%s:%s/appointments/ws" % (HOST, PORT)
 

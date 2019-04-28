@@ -102,7 +102,7 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
                   description: Validation error message
                   example: "control_type must be one of: PRIVATE, PROFESSIONAL"
                 status:
-                  type: number
+                  type: integer
                   description: HTTP error status code
                   example: 400
         """
@@ -121,13 +121,9 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
 
         assert user_type in ["PRIVATE", "PROFESSIONAL"], "user_type must be one of PRIVATE, PROFESSIONAL"
         assert control_type in ["REGULAR", "REJECTED"], "user_type must be one of REGULAR, REJECTED"
-        assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(
-            disp.appointments[user_type][control_type].keys()
-        )
+        assert vehicle_type in disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(disp.appointments[user_type][control_type].keys())
         assert organism in ["snct"], "user_type must be one of snct"
-        assert (organism, site) in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
-            disp.appointments[user_type][control_type][vehicle_type].keys()
-        )
+        assert (organism, site) in disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(disp.appointments[user_type][control_type][vehicle_type].keys())
         try:
             start_date = datetime.datetime.strptime(start_date, "%Y-%m-%d")
         except:  # pylint: disable=broad-except
@@ -139,5 +135,5 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
 
         appointments = disp.appointments[user_type][control_type][vehicle_type][(organism, site)]
 
-        payload = [x.isoformat() for x in sorted(appointments) if x >= start_date and x < end_date]
+        payload = [x.isoformat() for x in sorted(appointments) if start_date >= x < end_date]
         return aiohttp.web.json_response(payload, status=200)

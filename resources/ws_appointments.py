@@ -52,18 +52,18 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
               - vehicle_type
               - organism
               - site
-              - start_date
-              - end_date
+              - start_dt
+              - end_dt
             properties:
-              start_date:
-                description: Seek for appointment after this date (included)
+              start_dt:
+                description: Seek for appointment after this date (included) (as Lux local time)
                 type: string
-                format: date
+                format: date-time
                 required: true
-              end_date:
-                description: Seek for appointment before this date (excluded)
+              end_dt:
+                description: Seek for appointment before this date (excluded) (as Lux local time)
                 type: string
-                format: date
+                format: date-time
                 required: true
               user_type:
                 description: Type of user (private or pro)
@@ -92,45 +92,97 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
           101:
             description: Subcribed to new appointments successfully
             schema:
-              title: List of_appointments
-              type: array
-              items:
-                type: object
-                required:
-                  - user_type
-                  - control_type
-                  - vehicle_type
-                  - organism
-                  - site
-                  - timestamp
-                properties:
-                  user_type:
-                    description: Type of user (private or pro)
-                    type: string
-                    enum: ["PRIVATE", "PROFESSIONAL"]
-                    default: PRIVATE
-                  control_type:
-                    description: Type of control (initial or re-test for a rejected vehicule)
-                    type: string
-                    enum: ["REGULAR", "REJECT"]
-                    default: REGULAR
-                  vehicle_type:
-                    description: Type of vehicle
-                    type: string
-                    enum: ["motocycle", "car", "bus", "small_trailer", "large_trailer", "van", "truck", "tractor"]
-                    default: car
-                  organism:
-                    description: SNCT or a private competitor
-                    type: string
-                    enum: ["snct"]
-                    default: snct
-                  site:
-                    description: Site name, like esch_sur_alzette for SNCT
-                    type: string
-                  timestamp:
-                    description: Date and time of the available appointment slot
-                    type: string
-                    format: date-time
+              title: Initial or update of appointments
+              type: object
+              required:
+                - status
+                - added
+                - removed
+              properties:
+                status:
+                  type: integer
+                  description: HTTP success code
+                  example: 200
+                added:
+                  title: List of new available appointments
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - user_type
+                      - control_type
+                      - vehicle_type
+                      - organism
+                      - site
+                      - timestamp
+                    properties:
+                      user_type:
+                        description: Type of user (private or pro)
+                        type: string
+                        enum: ["PRIVATE", "PROFESSIONAL"]
+                        default: PRIVATE
+                      control_type:
+                        description: Type of control (initial or re-test for a rejected vehicule)
+                        type: string
+                        enum: ["REGULAR", "REJECT"]
+                        default: REGULAR
+                      vehicle_type:
+                        description: Type of vehicle
+                        type: string
+                        enum: ["motocycle", "car", "bus", "small_trailer", "large_trailer", "van", "truck", "tractor"]
+                        default: car
+                      organism:
+                        description: SNCT or a private competitor
+                        type: string
+                        enum: ["snct"]
+                        default: snct
+                      site:
+                        description: Site name, like esch_sur_alzette for SNCT
+                        type: string
+                      timestamp:
+                        description: Date and time of the available appointment slot
+                        type: string
+                        format: date-time
+                removed:
+                  title: List of removed appointments
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - user_type
+                      - control_type
+                      - vehicle_type
+                      - organism
+                      - site
+                      - timestamp
+                    properties:
+                      user_type:
+                        description: Type of user (private or pro)
+                        type: string
+                        enum: ["PRIVATE", "PROFESSIONAL"]
+                        default: PRIVATE
+                      control_type:
+                        description: Type of control (initial or re-test for a rejected vehicule)
+                        type: string
+                        enum: ["REGULAR", "REJECT"]
+                        default: REGULAR
+                      vehicle_type:
+                        description: Type of vehicle
+                        type: string
+                        enum: ["motocycle", "car", "bus", "small_trailer", "large_trailer", "van", "truck", "tractor"]
+                        default: car
+                      organism:
+                        description: SNCT or a private competitor
+                        type: string
+                        enum: ["snct"]
+                        default: snct
+                      site:
+                        description: Site name, like esch_sur_alzette for SNCT
+                        type: string
+                      timestamp:
+                        description: Date and time of the available appointment slot
+                        type: string
+                        format: date-time
           400:
             description: Bad request
             schema:
@@ -145,7 +197,7 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
                   description: Validation error message
                   example: "control_type must be one of: private, pro"
                 status:
-                  type: number
+                  type: integer
                   description: HTTP error status code
                   example: 400
           403:
@@ -162,7 +214,7 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
                   description: You are doing classic HTTP on a Websocket route
                   example: This route is for WebSocket clients only
                 status:
-                  type: number
+                  type: integer
                   description: HTTP error status code
                   example: 403
         """
@@ -184,7 +236,8 @@ class WsHandler:
         self.factory = factory
         self.request = request
         self.aiohttp_task = aiohttp_task
-        self.ws = aiohttp.web.WebSocketResponse()  # pylint: disable=invalid-name
+        self.ws = aiohttp.web.WebSocketResponse()  # pylint: disable=invalid-name,no-member
+        self.criterias = None
 
     @property
     def app(self):
@@ -265,34 +318,58 @@ class WsHandler:
 
             assert user_type in ["PRIVATE", "PROFESSIONAL"], "user_type must be one of PRIVATE, PROFESSIONAL"
             assert control_type in ["REGULAR", "REJECTED"], "user_type must be one of REGULAR, REJECTED"
-            assert vehicle_type in self.disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(
-                self.disp.appointments[user_type][control_type].keys()
-            )
+            assert vehicle_type in self.disp.appointments[user_type][control_type].keys(), "vehicle_type must be one of %s" % list(self.disp.appointments[user_type][control_type].keys())
             assert organism in ["snct"], "user_type must be one of snct"
             organism_site = (organism, site)
             assert organism_site in self.disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
                 self.disp.appointments[user_type][control_type][vehicle_type].keys()
             )
             try:
-                start_dt = dateutil.parser.parse(start_dt)
+                start_dt = dateutil.parser.parse(start_dt[:19])
                 criteria["start_dt"] = start_dt
             except:  # pylint: disable=broad-except
                 raise AssertionError("start_dt must be a date like 2019-01-01 or a datetime like 2019-01-01T08:15:00")
             try:
-                end_dt = dateutil.parser.parse(end_dt)
+                end_dt = dateutil.parser.parse(end_dt[:19])
                 criteria["end_dt"] = end_dt
             except:  # pylint: disable=broad-except
-                raise AssertionError("end_date must be a date like 2019-02-01 or a datetime like 2019-01-01T09:30:00")
+                raise AssertionError("end_dt must be a date like 2019-02-01 or a datetime like 2019-01-01T09:30:00")
 
-            return criterias
+        return criterias
 
-    async def push_appointments(self, appointments):
+    async def push_initial_appointments(self):
+        """ Once WS received criterias of interrest, push list of available appointments """
+
+        payload = []
+        for criteria in self.criterias:
+
+            user_type = criteria["user_type"]
+            control_type = criteria["control_type"]
+            vehicle_type = criteria["vehicle_type"]
+            organism = criteria["organism"]
+            site = criteria["site"]
+            start_dt = criteria["start_dt"]
+            end_dt = criteria["end_dt"]
+
+            appointments = self.disp.appointments[user_type][control_type][vehicle_type][(organism, site)]
+
+            for appointment in appointments:
+                if appointment < start_dt or appointment > end_dt:
+                    continue
+                payload.append({"user_type": user_type, "control_type": control_type, "vehicle_type": vehicle_type, "organism": organism, "site": site, "timestamp": appointment.isoformat()})
+
+        await self.push_appointments(added=payload)
+
+    async def push_appointments(self, added=None, removed=None):
         """
         Method called by AppointmentDispatcher when new appointments
         match giver criterias
         """
 
-        await self.send_json({"appointments": appointments})
+        added = added if added is not None else []
+        removed = removed if removed is not None else []
+
+        await self.send_json({"status": 200, "added": added, "removed": removed})
 
     async def run_forever(self):  # pylint: disable=too-many-branches
         """
@@ -308,15 +385,16 @@ class WsHandler:
                         break
                     else:
                         try:
-                            criterias = self.validate_criterias(msg.data)
+                            self.criterias = self.validate_criterias(msg.data)
                         except AssertionError as exc:
                             await self.send_json({"message": str(exc), "status": 400})
                         except Exception as exc:  # pylint: disable=broad-except
                             await self.send_json({"message": "Got unhandled type of message", "status": 500})
                             self.logger.warning("Got invalid WebSocket payload: %s: %s: %s", exc.__class__.__name__, exc, msg.data)
                         else:
-                            self.logger.info("Got valid criterias: %s", criterias)
-                            self.disp.register_appointment_client(self, criterias)
+                            self.logger.info("Got valid criterias: %s", self.criterias)
+                            await self.push_initial_appointments()
+                            self.disp.register_appointment_client(self, self.criterias)
                 elif msg.type == aiohttp.WSMsgType.close:
                     break
                 # aiohttp.WSMsgType.closing existence seems to depends on aiohttp version
