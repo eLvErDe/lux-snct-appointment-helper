@@ -359,6 +359,10 @@ class WsHandler:
 
             appointments = self.disp.appointments[user_type][control_type][vehicle_type][(organism, site)]
 
+            # Refresh failed
+            if appointments is None:
+                continue
+
             for appointment in appointments:
                 if appointment < start_dt or appointment > end_dt:
                     continue
