@@ -22,7 +22,7 @@ class AppointmentDispatcher:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.sites = []
         self.vehicle_types = []
-        self.appointments = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict())))
+        self.appointments = collections.defaultdict(lambda: collections.defaultdict(lambda: collections.defaultdict(dict)))
 
         self.appointments_clients = {}
 
