@@ -39,6 +39,55 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
         - application/json
         tags:
         - appointments
+        parameters:
+        - in: body
+          name: criterias_list
+          description: List of criterias to filter appointments (publish to WS after connecting)
+          type: array
+          items:
+            type: object
+            required:
+              - user_type
+              - control_type
+              - vehicle_type
+              - organism
+              - site
+              - start_date
+              - end_date
+            properties:
+              start_date:
+                description: Seek for appointment after this date (included)
+                type: string
+                format: date
+                required: true
+              end_date:
+                description: Seek for appointment before this date (excluded)
+                type: string
+                format: date
+                required: true
+              user_type:
+                description: Type of user (private or pro)
+                type: string
+                enum: ["PRIVATE", "PROFESSIONAL"]
+                default: PRIVATE
+              control_type:
+                description: Type of control (initial or re-test for a rejected vehicule)
+                type: string
+                enum: ["REGULAR", "REJECT"]
+                default: REGULAR
+              vehicle_type:
+                description: Type of vehicle
+                type: string
+                enum: ["motocycle", "car", "bus", "small_trailer", "large_trailer", "van", "truck", "tractor"]
+                default: car
+              organism:
+                description: SNCT or a private competitor
+                type: string
+                enum: ["snct"]
+                default: snct
+              site:
+                description: Site name, like esch_sur_alzette for SNCT
+                type: string
         responses:
           101:
             description: Subcribed to new appointments successfully
