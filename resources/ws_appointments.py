@@ -398,6 +398,7 @@ class WsHandler:
                             self.criterias = self.validate_criterias(msg.data)
                         except AssertionError as exc:
                             await self.send_json({"message": str(exc), "status": 400})
+                            self.logger.info("Got INVALID criterias: %s: %s", exc, self.criterias)
                         except Exception as exc:  # pylint: disable=broad-except
                             await self.send_json({"message": "Got unhandled type of message", "status": 500})
                             self.logger.warning("Got invalid WebSocket payload: %s: %s: %s", exc.__class__.__name__, exc, msg.data)
