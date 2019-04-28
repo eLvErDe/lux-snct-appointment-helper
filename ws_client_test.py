@@ -19,8 +19,9 @@ import aiohttp
 
 HOST = os.getenv("HOST", "127.0.0.1")
 PORT = int(os.getenv("PORT", "5000"))
+SSL = int(os.getenv("SSL", "0"))
 
-URL = "http://%s:%s/appointments/ws" % (HOST, PORT)
+URL = "%s://%s:%s/appointments/ws" % ("wss" if SSL else "ws", HOST, PORT)
 
 LOGGER = logging.getLogger("ws_client_test")
 
