@@ -269,7 +269,7 @@ class WsHandler:
                 self.disp.appointments[user_type][control_type].keys()
             )
             assert organism in ["snct"], "user_type must be one of snct"
-            organism_site = "%s/%s" % (organism, site)
+            organism_site = (organism, site)
             assert organism_site in self.disp.appointments[user_type][control_type][vehicle_type].keys(), "site must be one of %s" % list(
                 self.disp.appointments[user_type][control_type][vehicle_type].keys()
             )
