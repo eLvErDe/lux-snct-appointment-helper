@@ -288,7 +288,13 @@ class WsHandler:
     async def send_json(self, payload):
         """ Send a JSON to WebSocket client """
 
-        await self.ws.send_json(payload, dumps=functools.partial(json.dumps, default=self.json_serializer))
+        json_dumper = functools.partial(json.dumps, default=self.json_serializer)
+
+        # Changed in version 3.0: The method is converted into coroutine
+        if asyncio.iscoroutinefunction(self.ws.send_json):
+            await self.ws.send_json(payload, dumps=json_dumper)
+        else:
+            self.ws.send_json(payload, dumps=json_dumper)
 
     async def close(self):
         """ Close WebSocket object """
