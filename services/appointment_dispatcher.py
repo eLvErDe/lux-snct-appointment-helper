@@ -62,4 +62,4 @@ class AppointmentDispatcher:
         """ Register a new client for appointments update """
 
         self.logger.info("A client %s unregistered", handler.__class__.__name__)
-        self.appointments_clients.pop(handler)
+        self.appointments_clients.pop(handler, None)
