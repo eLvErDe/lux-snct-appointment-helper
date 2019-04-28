@@ -236,7 +236,7 @@ class WsHandler:
         self.factory = factory
         self.request = request
         self.aiohttp_task = aiohttp_task
-        self.ws = aiohttp.web.WebSocketResponse()  # pylint: disable=invalid-name,no-member
+        self.ws = aiohttp.web.WebSocketResponse(heartbeat=30)  # pylint: disable=invalid-name,no-member
         self.criterias = None
 
     @property
