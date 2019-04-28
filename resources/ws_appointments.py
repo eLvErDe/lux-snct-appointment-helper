@@ -71,7 +71,7 @@ class WsAppointments:  # pylint: disable=invalid-name,too-few-public-methods
                     enum: ["motocycle", "car", "bus", "small_trailer", "large_trailer", "van", "truck", "tractor"]
                     default: car
                   organism:
-                    description: SNCT or a private concurrent
+                    description: SNCT or a private competitor
                     type: string
                     enum: ["snct"]
                     default: snct

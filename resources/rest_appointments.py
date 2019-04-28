@@ -51,7 +51,7 @@ class RestAppointments:  # pylint: disable=too-few-public-methods
           required: true
         - in: path
           name: organism
-          description: SNCT or a private concurrent
+          description: SNCT or a private competitor
           type: string
           enum: ["snct"]
           default: snct
