@@ -43,9 +43,11 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
 
         self.url = "https://rdv.snct.lu"
         self.timeout = 10
-        self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(limit=10))  # Will limit API connection to 10 simultaneous calls
+        self.concurrency = 10
+        self.session = aiohttp.ClientSession(connector=aiohttp.TCPConnector(verify_ssl=False))
         self.logger = logging.getLogger(self.__class__.__name__)
         self.closed = False
+        self.semaphore = asyncio.Semaphore(value=self.concurrency)
 
         self.site_list = {}
         self.vehicle_list = {}
@@ -112,7 +114,9 @@ class SnctAppointmentScrapper:  # pylint: disable=too-many-instance-attributes
             return
 
         try:
-            resp = await self.session.get(url, timeout=self.timeout)
+            #self.logger.info("About to query %s, semaphore is %s", url, self.semaphore)
+            async with self.semaphore:
+                resp = await self.session.get(url, timeout=self.timeout)
             if resp.status == 200:
                 try:
                     payload = await resp.json()
