@@ -5,7 +5,7 @@
 
 
 """
-Main file to run Bosch Dome RCP+ PTZ API
+Main file to run SNCT Appointment helper
 """
 
 
@@ -24,9 +24,9 @@ PROJECT_ROOT = os.path.abspath(os.path.join(__file__, os.pardir))
 
 
 def set_process_name(config_obj=None):
-    """ Set process name according to pom.xml file """
+    """ Set process name """
 
-    artifact_id = "bosch-dome-rcpplus-ptz-api"
+    artifact_id = "snct-appointment-helper"
     version = "1.0"
 
     # Strip passwords from arguments
@@ -57,7 +57,7 @@ def get_arguments_from_cmd_line():
     # Raise terminal size, See https://bugs.python.org/issue13041
     os.environ["COLUMNS"] = str(shutil.get_terminal_size().columns)
 
-    parser = argparse.ArgumentParser(description="Bosch Dome RCP+ PTZ API", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description="SNCT Appointment helper", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("-b", "--bind-address", type=str, default="0.0.0.0", help="Address to bind on", metavar="::1")
     parser.add_argument("-p", "--bind-port", type=int, default=5000, help="Port to bind on", metavar=8877)
